@@ -16,35 +16,34 @@
 #include <modem/modem_key_mgmt.h>
 #endif
 
-#define HTTPS_PORT		"443"
-#define HTTPS_HOSTNAME		"example.com"
-#define HTTP_HEAD		\
-				"HEAD / HTTP/1.1\r\n"	\
-				"Host: " HTTPS_HOSTNAME ":" HTTPS_PORT "\r\n"		\
-				"Connection: close\r\n\r\n"
+#define HTTPS_PORT     "443"
+#define HTTPS_HOSTNAME "example.com"
+#define HTTP_HEAD                                                                                  \
+	"HEAD / HTTP/1.1\r\n"                                                                      \
+	"Host: " HTTPS_HOSTNAME ":" HTTPS_PORT "\r\n"                                              \
+	"Connection: close\r\n\r\n"
 
-#define HTTP_HEAD_LEN		(sizeof(HTTP_HEAD) - 1)
-#define HTTP_HDR_END		"\r\n\r\n"
+#define HTTP_HEAD_LEN (sizeof(HTTP_HEAD) - 1)
+#define HTTP_HDR_END  "\r\n\r\n"
 
-#define RECV_BUF_SIZE		2048
-#define TLS_SEC_TAG		42
+#define RECV_BUF_SIZE 2048
+#define TLS_SEC_TAG   42
 
 /* Macros used to subscribe to specific Zephyr NET management events. */
-#define L4_EVENT_MASK		(NET_EVENT_L4_CONNECTED | NET_EVENT_L4_DISCONNECTED)
-#define CONN_LAYER_EVENT_MASK	(NET_EVENT_CONN_IF_FATAL_ERROR)
+#define L4_EVENT_MASK         (NET_EVENT_L4_CONNECTED | NET_EVENT_L4_DISCONNECTED)
+#define CONN_LAYER_EVENT_MASK (NET_EVENT_CONN_IF_FATAL_ERROR)
 
 static const char send_buf[] = HTTP_HEAD;
 static char recv_buf[RECV_BUF_SIZE];
 static K_SEM_DEFINE(network_connected_sem, 0, 1);
 /* Certificate for `example.com` */
 static const char cert[] = {
-	#include "DigiCertGlobalG2.pem.inc"
+#include "DigiCertGlobalG3.pem.inc"
 
 	/* Null terminate certificate if running Mbed TLS on the application core.
 	 * Required by TLS credentials API.
 	 */
-	IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
-};
+	IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00)) };
 
 /* Zephyr NET management event callback structures. */
 static struct net_mgmt_event_callback l4_cb;
@@ -98,11 +97,8 @@ int cert_provision(void)
 		printk("Failed to provision certificate, err %d\n", err);
 		return err;
 	}
-#else /* CONFIG_MODEM_KEY_MGMT */
-	err = tls_credential_add(TLS_SEC_TAG,
-				 TLS_CREDENTIAL_CA_CERTIFICATE,
-				 cert,
-				 sizeof(cert));
+#else  /* CONFIG_MODEM_KEY_MGMT */
+	err = tls_credential_add(TLS_SEC_TAG, TLS_CREDENTIAL_CA_CERTIFICATE, cert, sizeof(cert));
 	if (err == -EEXIST) {
 		printk("CA certificate already exists, sec tag: %d\n", TLS_SEC_TAG);
 	} else if (err < 0) {
@@ -113,7 +109,6 @@ int cert_provision(void)
 
 	return 0;
 }
-
 
 /* Setup TLS options on a given socket */
 int tls_setup(int fd)
@@ -168,8 +163,7 @@ static void on_net_event_l4_connected(void)
 	k_sem_give(&network_connected_sem);
 }
 
-static void l4_event_handler(struct net_mgmt_event_callback *cb,
-			     uint32_t event,
+static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
 			     struct net_if *iface)
 {
 	switch (event) {
@@ -186,8 +180,7 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb,
 	}
 }
 
-static void connectivity_event_handler(struct net_mgmt_event_callback *cb,
-				       uint32_t event,
+static void connectivity_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
 				       struct net_if *iface)
 {
 	if (event == NET_EVENT_CONN_IF_FATAL_ERROR) {
@@ -317,7 +310,7 @@ int main(void)
 		return err;
 	}
 
-	 /* Provision certificates before connecting to the network */
+	/* Provision certificates before connecting to the network */
 	err = cert_provision();
 	if (err) {
 		return 0;
